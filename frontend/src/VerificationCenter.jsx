@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { analyzeCoA } from "./api";
 
 export default function VerificationCenter({ onBack }) {
   const [file, setFile] = useState(null);
@@ -22,6 +23,7 @@ export default function VerificationCenter({ onBack }) {
     setError("");
   };
 
+  // FIXED API CONNECTION
   const handleAnalyze = async () => {
     if (!file) {
       setError("Please select a CoA PDF first.");
@@ -33,28 +35,17 @@ export default function VerificationCenter({ onBack }) {
     setAnalysis(null);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      const data = await analyzeCoA(file);
 
-      const response = await fetch(
-        "http://https://qualitylens-ai.onrender.com/api/coa/analyze/api/coa/analyze",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Analysis failed");
+      if (!data || !data.success) {
+        throw new Error(data?.message || "Analysis failed");
       }
 
       setAnalysis(data);
     } catch (err) {
       setError(
         err.message ||
-          "Backend connection failed. Please make sure Spring Boot is running."
+          "Backend connection failed. Please try again."
       );
     } finally {
       setLoading(false);
@@ -588,10 +579,8 @@ export default function VerificationCenter({ onBack }) {
               <div
                 className="vc-overall-status"
                 style={{
-                  background:
-                    getStatusBackground(overallStatus),
-                  color:
-                    getStatusColor(overallStatus),
+                  background: getStatusBackground(overallStatus),
+                  color: getStatusColor(overallStatus),
                 }}
               >
                 {overallStatus}
@@ -605,7 +594,7 @@ export default function VerificationCenter({ onBack }) {
                 <div className="vc-summary-icon">📊</div>
 
                 <h3>
-                  {analysis.qualityAnalysis.totalParameters || 0}
+                  {analysis.qualityAnalysis?.totalParameters || 0}
                 </h3>
 
                 <p>Total Parameters</p>
@@ -615,7 +604,7 @@ export default function VerificationCenter({ onBack }) {
                 <div className="vc-summary-icon">✅</div>
 
                 <h3>
-                  {analysis.qualityAnalysis.passCount || 0}
+                  {analysis.qualityAnalysis?.passCount || 0}
                 </h3>
 
                 <p>Passed</p>
@@ -625,7 +614,7 @@ export default function VerificationCenter({ onBack }) {
                 <div className="vc-summary-icon">❌</div>
 
                 <h3>
-                  {analysis.qualityAnalysis.failCount || 0}
+                  {analysis.qualityAnalysis?.failCount || 0}
                 </h3>
 
                 <p>Failed</p>
@@ -635,7 +624,7 @@ export default function VerificationCenter({ onBack }) {
                 <div className="vc-summary-icon">⚠️</div>
 
                 <h3>
-                  {analysis.qualityAnalysis.reviewCount || 0}
+                  {analysis.qualityAnalysis?.reviewCount || 0}
                 </h3>
 
                 <p>Needs Review</p>
@@ -721,14 +710,12 @@ export default function VerificationCenter({ onBack }) {
                             <span
                               className="vc-status"
                               style={{
-                                background:
-                                  getStatusBackground(
-                                    parameter.status
-                                  ),
-                                color:
-                                  getStatusColor(
-                                    parameter.status
-                                  ),
+                                background: getStatusBackground(
+                                  parameter.status
+                                ),
+                                color: getStatusColor(
+                                  parameter.status
+                                ),
                               }}
                             >
                               {parameter.status}

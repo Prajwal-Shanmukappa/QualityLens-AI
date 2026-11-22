@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { crossVerifyDocuments } from "./api";
 import "./CrossDocumentVerification.css";
 
 function CrossDocumentVerification({ onBack, onNavigate }) {
@@ -9,10 +10,7 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
 
-  /* ==========================================
-     BACK TO DASHBOARD
-  ========================================== */
-
+  // BACK TO DASHBOARD
   const handleBack = () => {
     if (typeof onBack === "function") {
       onBack();
@@ -24,14 +22,10 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
       return;
     }
 
-    // Fallback if navigation props are unavailable
     window.location.reload();
   };
 
-  /* ==========================================
-     FILE VALIDATION
-  ========================================== */
-
+  // FILE VALIDATION
   const handleFileChange = (event, type) => {
     const file = event.target.files?.[0];
 
@@ -57,10 +51,7 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
     setResult(null);
   };
 
-  /* ==========================================
-     REMOVE FILE
-  ========================================== */
-
+  // REMOVE FILE
   const removeFile = (type) => {
     if (type === "coa") {
       setCoaFile(null);
@@ -72,10 +63,7 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
     setError("");
   };
 
-  /* ==========================================
-     VERIFY DOCUMENTS
-  ========================================== */
-
+  // VERIFY DOCUMENTS
   const handleVerify = async () => {
     if (!coaFile || !purchaseOrderFile) {
       setError(
@@ -89,52 +77,15 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
     setResult(null);
 
     try {
-      const formData = new FormData();
-
-      // These names must match your Spring Boot controller
-      formData.append("coaFile", coaFile);
-      formData.append("purchaseOrderFile", purchaseOrderFile);
-
-      const response = await fetch(
-        "http://https://qualitylens-ai.onrender.com/api/coa/analyze/api/coa/cross-verify",
-        {
-          method: "POST",
-          body: formData,
-        }
+      // API CALL THROUGH api.js
+      const data = await crossVerifyDocuments(
+        coaFile,
+        purchaseOrderFile
       );
-
-      // Safely handle JSON and plain-text responses
-      const responseText = await response.text();
-
-      let data;
-
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        if (!response.ok) {
-          throw new Error(
-            responseText ||
-              `Server error: ${response.status}`
-          );
-        }
-
-        throw new Error(
-          "The backend returned an invalid response."
-        );
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
-            data.error ||
-            `Server error: ${response.status}`
-        );
-      }
 
       if (data.success === false) {
         throw new Error(
-          data.message ||
-            "Document verification failed."
+          data.message || "Document verification failed."
         );
       }
 
@@ -148,7 +99,7 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
 
       setError(
         err.message ||
-          "Failed to connect to the backend. Make sure Spring Boot is running."
+        "Failed to connect to the backend."
       );
 
     } finally {
@@ -156,10 +107,7 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
     }
   };
 
-  /* ==========================================
-     RESET
-  ========================================== */
-
+  // RESET
   const handleReset = () => {
     setCoaFile(null);
     setPurchaseOrderFile(null);
@@ -167,26 +115,18 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
     setError("");
   };
 
-  /* ==========================================
-     STATUS COLORS
-  ========================================== */
-
+  // STATUS COLORS
   const getStatusColor = (status) => {
     const normalized = String(status || "").toUpperCase();
 
     if (
-      normalized === "MATCH" ||
-      normalized === "PASS" ||
-      normalized === "VERIFIED" ||
-      normalized === "SUCCESS"
+      ["MATCH", "PASS", "VERIFIED", "SUCCESS"].includes(normalized)
     ) {
       return "#16a34a";
     }
 
     if (
-      normalized === "MISMATCH" ||
-      normalized === "FAIL" ||
-      normalized === "FAILED"
+      ["MISMATCH", "FAIL", "FAILED"].includes(normalized)
     ) {
       return "#dc2626";
     }
@@ -198,18 +138,13 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
     const normalized = String(status || "").toUpperCase();
 
     if (
-      normalized === "MATCH" ||
-      normalized === "PASS" ||
-      normalized === "VERIFIED" ||
-      normalized === "SUCCESS"
+      ["MATCH", "PASS", "VERIFIED", "SUCCESS"].includes(normalized)
     ) {
       return "#dcfce7";
     }
 
     if (
-      normalized === "MISMATCH" ||
-      normalized === "FAIL" ||
-      normalized === "FAILED"
+      ["MISMATCH", "FAIL", "FAILED"].includes(normalized)
     ) {
       return "#fee2e2";
     }
@@ -217,10 +152,7 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
     return "#fef3c7";
   };
 
-  /* ==========================================
-     RESULT HELPERS
-  ========================================== */
-
+  // RESULT HELPERS
   const getOverallStatus = () => {
     return (
       result?.overallStatus ||
@@ -275,22 +207,14 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
 
     const comparisons = getComparisons();
 
-    if (
-      !Array.isArray(comparisons) ||
-      comparisons.length === 0
-    ) {
+    if (!Array.isArray(comparisons) || comparisons.length === 0) {
       return 0;
     }
 
     const matches = comparisons.filter((item) => {
-      const status = String(item.status || "")
-        .toUpperCase();
+      const status = String(item.status || "").toUpperCase();
 
-      return (
-        status === "MATCH" ||
-        status === "PASS" ||
-        status === "VERIFIED"
-      );
+      return ["MATCH", "PASS", "VERIFIED"].includes(status);
     }).length;
 
     return Math.round(
@@ -343,10 +267,7 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
     );
   };
 
-  /* ==========================================
-     FILE SIZE
-  ========================================== */
-
+  // FILE SIZE
   const formatFileSize = (size) => {
     if (!size) return "0 KB";
 
@@ -356,10 +277,6 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
 
     return `${(size / (1024 * 1024)).toFixed(2)} MB`;
   };
-
-  /* ==========================================
-     MAIN UI
-  ========================================== */
 
   return (
     <div className="cross-document-page">
@@ -382,9 +299,7 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
             📑
           </div>
 
-          <h1>
-            Cross-Document Verification
-          </h1>
+          <h1>Cross-Document Verification</h1>
 
           <p>
             Compare your Certificate of Analysis with your
@@ -405,15 +320,11 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
         <div className="cross-document-card">
 
           <div className="section-heading">
-
-            <h2>
-              Upload Documents
-            </h2>
+            <h2>Upload Documents</h2>
 
             <p>
               Upload both documents to begin automated verification.
             </p>
-
           </div>
 
           <div className="document-upload-grid">
@@ -429,15 +340,11 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                 </div>
 
                 <div>
-
-                  <h3>
-                    Certificate of Analysis
-                  </h3>
+                  <h3>Certificate of Analysis</h3>
 
                   <p>
                     Upload the manufacturer's CoA
                   </p>
-
                 </div>
 
               </div>
@@ -454,55 +361,42 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                 />
 
                 {coaFile ? (
-
                   <div className="file-selected">
 
                     <div className="file-check">
                       ✓
                     </div>
 
-                    <h4>
-                      {coaFile.name}
-                    </h4>
+                    <h4>{coaFile.name}</h4>
 
-                    <p>
-                      File selected successfully
-                    </p>
+                    <p>File selected successfully</p>
 
                     <span>
                       PDF • {formatFileSize(coaFile.size)}
                     </span>
 
                   </div>
-
                 ) : (
-
                   <div className="upload-placeholder">
 
                     <div className="upload-icon">
                       📤
                     </div>
 
-                    <h4>
-                      Click to upload CoA
-                    </h4>
+                    <h4>Click to upload CoA</h4>
 
                     <p>
                       Select your Certificate of Analysis PDF
                     </p>
 
-                    <span>
-                      PDF files only
-                    </span>
+                    <span>PDF files only</span>
 
                   </div>
-
                 )}
 
               </label>
 
               {coaFile && (
-
                 <button
                   type="button"
                   className="remove-file-button"
@@ -510,7 +404,6 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                 >
                   Remove file
                 </button>
-
               )}
 
             </div>
@@ -526,15 +419,11 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                 </div>
 
                 <div>
-
-                  <h3>
-                    Purchase Order
-                  </h3>
+                  <h3>Purchase Order</h3>
 
                   <p>
                     Upload the purchase order document
                   </p>
-
                 </div>
 
               </div>
@@ -551,29 +440,22 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                 />
 
                 {purchaseOrderFile ? (
-
                   <div className="file-selected">
 
                     <div className="file-check">
                       ✓
                     </div>
 
-                    <h4>
-                      {purchaseOrderFile.name}
-                    </h4>
+                    <h4>{purchaseOrderFile.name}</h4>
 
-                    <p>
-                      File selected successfully
-                    </p>
+                    <p>File selected successfully</p>
 
                     <span>
                       PDF • {formatFileSize(purchaseOrderFile.size)}
                     </span>
 
                   </div>
-
                 ) : (
-
                   <div className="upload-placeholder">
 
                     <div className="upload-icon">
@@ -588,28 +470,21 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                       Select your Purchase Order PDF
                     </p>
 
-                    <span>
-                      PDF files only
-                    </span>
+                    <span>PDF files only</span>
 
                   </div>
-
                 )}
 
               </label>
 
               {purchaseOrderFile && (
-
                 <button
                   type="button"
                   className="remove-file-button"
-                  onClick={() =>
-                    removeFile("purchaseOrder")
-                  }
+                  onClick={() => removeFile("purchaseOrder")}
                 >
                   Remove file
                 </button>
-
               )}
 
             </div>
@@ -619,19 +494,13 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
           {/* ERROR */}
 
           {error && (
-
             <div className="verification-error">
 
-              <span>
-                ⚠️
-              </span>
+              <span>⚠️</span>
 
-              <p>
-                {error}
-              </p>
+              <p>{error}</p>
 
             </div>
-
           )}
 
           {/* ACTIONS */}
@@ -650,18 +519,14 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
             >
 
               {loading ? (
-
                 <>
                   <span className="loading-spinner"></span>
                   Verifying Documents...
                 </>
-
               ) : (
-
                 <>
                   🔍 Verify Documents
                 </>
-
               )}
 
             </button>
@@ -682,7 +547,6 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
         {/* RESULTS */}
 
         {result && (
-
           <div className="verification-results">
 
             {/* RESULT HEADER */}
@@ -690,15 +554,11 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
             <div className="result-header">
 
               <div>
-
-                <h2>
-                  Verification Results
-                </h2>
+                <h2>Verification Results</h2>
 
                 <p>
                   Cross-document analysis completed successfully.
                 </p>
-
               </div>
 
               <div
@@ -725,15 +585,11 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                 </div>
 
                 <div>
-
-                  <p>
-                    Match Percentage
-                  </p>
+                  <p>Match Percentage</p>
 
                   <h2>
                     {getMatchPercentage()}%
                   </h2>
-
                 </div>
 
               </div>
@@ -745,15 +601,11 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                 </div>
 
                 <div>
-
-                  <p>
-                    Matched Fields
-                  </p>
+                  <p>Matched Fields</p>
 
                   <h2>
                     {getMatchCount()}
                   </h2>
-
                 </div>
 
               </div>
@@ -765,15 +617,11 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                 </div>
 
                 <div>
-
-                  <p>
-                    Mismatched Fields
-                  </p>
+                  <p>Mismatched Fields</p>
 
                   <h2>
                     {getMismatchCount()}
                   </h2>
-
                 </div>
 
               </div>
@@ -785,15 +633,11 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                 </div>
 
                 <div>
-
-                  <p>
-                    Review Required
-                  </p>
+                  <p>Review Required</p>
 
                   <h2>
                     {getReviewCount()}
                   </h2>
-
                 </div>
 
               </div>
@@ -806,9 +650,7 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
 
               <div className="progress-heading">
 
-                <span>
-                  Document Consistency
-                </span>
+                <span>Document Consistency</span>
 
                 <strong>
                   {getMatchPercentage()}%
@@ -836,57 +678,34 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
 
             <div className="comparison-section">
 
-              <h2>
-                Field-by-Field Comparison
-              </h2>
+              <h2>Field-by-Field Comparison</h2>
 
               {Array.isArray(getComparisons()) &&
               getComparisons().length > 0 ? (
-
                 <div className="comparison-table-wrapper">
 
                   <table className="comparison-table">
 
                     <thead>
-
                       <tr>
-
-                        <th>
-                          Field
-                        </th>
-
-                        <th>
-                          Certificate of Analysis
-                        </th>
-
-                        <th>
-                          Purchase Order
-                        </th>
-
-                        <th>
-                          Status
-                        </th>
-
+                        <th>Field</th>
+                        <th>Certificate of Analysis</th>
+                        <th>Purchase Order</th>
+                        <th>Status</th>
                       </tr>
-
                     </thead>
 
                     <tbody>
-
                       {getComparisons().map((item, index) => {
-
                         const status = getFieldStatus(item);
 
                         return (
-
                           <tr key={index}>
 
                             <td>
-
                               <strong>
                                 {getFieldName(item)}
                               </strong>
-
                             </td>
 
                             <td>
@@ -898,7 +717,6 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                             </td>
 
                             <td>
-
                               <span
                                 className="comparison-status"
                                 style={{
@@ -909,23 +727,17 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                               >
                                 {status}
                               </span>
-
                             </td>
 
                           </tr>
-
                         );
-
                       })}
-
                     </tbody>
 
                   </table>
 
                 </div>
-
               ) : (
-
                 <div className="no-comparison-results">
 
                   <p>
@@ -938,7 +750,6 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                   </pre>
 
                 </div>
-
               )}
 
             </div>
@@ -946,7 +757,6 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
             {/* AI RECOMMENDATION */}
 
             {result.recommendation && (
-
               <div className="recommendation-card">
 
                 <div className="recommendation-icon">
@@ -954,19 +764,14 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
                 </div>
 
                 <div>
-
-                  <h3>
-                    AI Recommendation
-                  </h3>
+                  <h3>AI Recommendation</h3>
 
                   <p>
                     {result.recommendation}
                   </p>
-
                 </div>
 
               </div>
-
             )}
 
             {/* TECHNICAL RESPONSE */}
@@ -984,7 +789,6 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
             </details>
 
           </div>
-
         )}
 
       </div>

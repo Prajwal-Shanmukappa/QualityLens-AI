@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { analyzeCoA } from "./api";
 
 export default function UploadPage({ onBack }) {
   const [file, setFile] = useState(null);
@@ -6,10 +7,7 @@ export default function UploadPage({ onBack }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  // ==========================================
   // ANALYZE DOCUMENT
-  // ==========================================
-
   const handleAnalyze = async () => {
     if (!file) {
       setError("Please select a PDF file.");
@@ -21,28 +19,14 @@ export default function UploadPage({ onBack }) {
     setResult(null);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // API CALL
+      const responseData = await analyzeCoA(file);
 
-      const response = await fetch(
-        "http://https://qualitylens-ai.onrender.com/api/coa/analyze/api/coa/analyze",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      const responseData = await response.json();
-
-      if (!response.ok || !responseData.success) {
+      if (responseData.success === false) {
         throw new Error(
           responseData.message || "Analysis failed."
         );
       }
-
-      // ==========================================
-      // EXTRACT ANALYSIS DATA
-      // ==========================================
 
       const qualityAnalysis =
         responseData.qualityAnalysis || {};
@@ -72,10 +56,7 @@ export default function UploadPage({ onBack }) {
         qualityAnalysis.reviewCount ??
         0;
 
-      // ==========================================
-      // SAVE RECORD IN CORRECT STRUCTURE
-      // ==========================================
-
+      // CREATE RECORD
       const newRecord = {
         id: Date.now(),
 
@@ -86,18 +67,18 @@ export default function UploadPage({ onBack }) {
         date: new Date().toLocaleString(),
         timestamp: new Date().toISOString(),
 
-        overallStatus: overallStatus,
+        overallStatus,
         status: overallStatus,
 
-        totalParameters: totalParameters,
-        passCount: passCount,
-        failCount: failCount,
-        reviewCount: reviewCount,
+        totalParameters,
+        passCount,
+        failCount,
+        reviewCount,
 
         supplier: responseData.supplier || "Not detected",
         batchNumber: responseData.batchNumber || "Not detected",
 
-        qualityAnalysis: qualityAnalysis,
+        qualityAnalysis,
 
         parameters: qualityAnalysis.parameters || [],
 
@@ -106,10 +87,7 @@ export default function UploadPage({ onBack }) {
         result: responseData,
       };
 
-      // ==========================================
       // SAVE TO LOCAL STORAGE
-      // ==========================================
-
       let existingRecords = [];
 
       try {
@@ -127,10 +105,7 @@ export default function UploadPage({ onBack }) {
         JSON.stringify(existingRecords)
       );
 
-      // ==========================================
-      // DISPLAY RESULTS
-      // ==========================================
-
+      // DISPLAY RESULT
       setResult({
         ...responseData,
         overallStatus,
@@ -146,7 +121,7 @@ export default function UploadPage({ onBack }) {
 
       setError(
         err.message.includes("Failed to fetch")
-          ? "Cannot connect to backend. Make sure Spring Boot is running on port 8080."
+          ? "Cannot connect to the backend. Please try again. The Render server may be waking up."
           : err.message
       );
 
@@ -155,20 +130,14 @@ export default function UploadPage({ onBack }) {
     }
   };
 
-  // ==========================================
   // RESET
-  // ==========================================
-
   const handleReset = () => {
     setFile(null);
     setResult(null);
     setError("");
   };
 
-  // ==========================================
   // DATA
-  // ==========================================
-
   const analysis = result?.qualityAnalysis || {};
   const parameters = analysis.parameters || [];
 
@@ -177,10 +146,7 @@ export default function UploadPage({ onBack }) {
     analysis?.overallStatus ||
     "REVIEW";
 
-  // ==========================================
   // STATUS COLORS
-  // ==========================================
-
   const getStatusColor = (status) => {
     if (status === "PASS") return "#16a34a";
     if (status === "FAIL") return "#dc2626";
@@ -199,10 +165,6 @@ export default function UploadPage({ onBack }) {
     return "⚠";
   };
 
-  // ==========================================
-  // MAIN UI
-  // ==========================================
-
   return (
     <div className="module-page">
 
@@ -218,25 +180,20 @@ export default function UploadPage({ onBack }) {
         </button>
 
         <div className="module-title">
-
           <h1>AI CoA Analysis</h1>
 
           <p>
             Upload and analyze Certificate of Analysis documents
           </p>
-
         </div>
 
       </div>
 
       <div className="upload-container">
 
-        {/* ====================================== */}
         {/* UPLOAD SECTION */}
-        {/* ====================================== */}
 
         {!result && (
-
           <>
             <h2>Upload Certificate of Analysis</h2>
 
@@ -267,9 +224,7 @@ export default function UploadPage({ onBack }) {
 
               <h3>Select your CoA PDF</h3>
 
-              <p>
-                Supported format: PDF
-              </p>
+              <p>Supported format: PDF</p>
 
               <input
                 type="file"
@@ -279,10 +234,13 @@ export default function UploadPage({ onBack }) {
                     event.target.files[0];
 
                   if (selectedFile) {
+                    const isPDF =
+                      selectedFile.type === "application/pdf" ||
+                      selectedFile.name
+                        .toLowerCase()
+                        .endsWith(".pdf");
 
-                    if (
-                      selectedFile.type !== "application/pdf"
-                    ) {
+                    if (!isPDF) {
                       setError("Please select a valid PDF file.");
                       setFile(null);
                       return;
@@ -296,7 +254,6 @@ export default function UploadPage({ onBack }) {
               />
 
               {file && (
-
                 <div
                   style={{
                     marginTop: "25px",
@@ -306,17 +263,12 @@ export default function UploadPage({ onBack }) {
                     color: "#0369a1",
                   }}
                 >
-
-                  <strong>
-                    📄 {file.name}
-                  </strong>
+                  <strong>📄 {file.name}</strong>
 
                   <p style={{ marginTop: "8px" }}>
                     Size: {(file.size / 1024).toFixed(2)} KB
                   </p>
-
                 </div>
-
               )}
 
               <button
@@ -326,29 +278,21 @@ export default function UploadPage({ onBack }) {
                 style={{
                   marginTop: "25px",
                   padding: "14px 30px",
-                  opacity:
-                    loading || !file ? 0.6 : 1,
+                  opacity: loading || !file ? 0.6 : 1,
                 }}
               >
-
                 {loading
                   ? "🤖 Analyzing Document..."
                   : "✨ Analyze with AI"}
-
               </button>
 
             </div>
-
           </>
-
         )}
 
-        {/* ====================================== */}
         {/* ERROR */}
-        {/* ====================================== */}
 
         {error && (
-
           <div
             style={{
               marginTop: "25px",
@@ -361,15 +305,11 @@ export default function UploadPage({ onBack }) {
           >
             ❌ {error}
           </div>
-
         )}
 
-        {/* ====================================== */}
         {/* LOADING */}
-        {/* ====================================== */}
 
         {loading && (
-
           <div
             style={{
               marginTop: "25px",
@@ -380,7 +320,6 @@ export default function UploadPage({ onBack }) {
               color: "#1d4ed8",
             }}
           >
-
             <h3>
               🤖 CertiVerify AI is analyzing your document
             </h3>
@@ -389,17 +328,12 @@ export default function UploadPage({ onBack }) {
               Extracting PDF information and checking
               quality parameters...
             </p>
-
           </div>
-
         )}
 
-        {/* ====================================== */}
         {/* ANALYSIS RESULTS */}
-        {/* ====================================== */}
 
         {result && (
-
           <div
             style={{
               marginTop: "30px",
@@ -432,7 +366,6 @@ export default function UploadPage({ onBack }) {
               >
 
                 <div>
-
                   <h2 style={{ margin: "0 0 10px 0" }}>
                     Analysis Report
                   </h2>
@@ -443,9 +376,8 @@ export default function UploadPage({ onBack }) {
                       margin: 0,
                     }}
                   >
-                    {result.fileName}
+                    {result.fileName || file?.name}
                   </p>
-
                 </div>
 
                 <div
@@ -458,9 +390,7 @@ export default function UploadPage({ onBack }) {
                     fontSize: "16px",
                   }}
                 >
-
                   {getStatusIcon(status)} {status}
-
                 </div>
 
               </div>
@@ -473,11 +403,9 @@ export default function UploadPage({ onBack }) {
                   borderRadius: "12px",
                 }}
               >
-
                 <p style={{ margin: 0 }}>
-                  🤖 {result.message}
+                  🤖 {result.message || "Analysis completed."}
                 </p>
-
               </div>
 
             </div>
@@ -493,18 +421,14 @@ export default function UploadPage({ onBack }) {
               }}
             >
 
-              {/* TOTAL */}
-
               <div
                 style={{
                   padding: "25px",
                   background: "white",
                   borderRadius: "16px",
                   border: "1px solid #e2e8f0",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
                 }}
               >
-
                 <p style={{ color: "#64748b", margin: 0 }}>
                   Total Parameters
                 </p>
@@ -516,10 +440,7 @@ export default function UploadPage({ onBack }) {
                 <p style={{ color: "#64748b", margin: 0 }}>
                   Analyzed
                 </p>
-
               </div>
-
-              {/* PASS */}
 
               <div
                 style={{
@@ -529,7 +450,6 @@ export default function UploadPage({ onBack }) {
                   border: "1px solid #bbf7d0",
                 }}
               >
-
                 <p style={{ color: "#15803d", margin: 0 }}>
                   Passed
                 </p>
@@ -547,10 +467,7 @@ export default function UploadPage({ onBack }) {
                 <p style={{ color: "#15803d", margin: 0 }}>
                   Parameters compliant
                 </p>
-
               </div>
-
-              {/* FAIL */}
 
               <div
                 style={{
@@ -560,7 +477,6 @@ export default function UploadPage({ onBack }) {
                   border: "1px solid #fecaca",
                 }}
               >
-
                 <p style={{ color: "#b91c1c", margin: 0 }}>
                   Failed
                 </p>
@@ -578,10 +494,7 @@ export default function UploadPage({ onBack }) {
                 <p style={{ color: "#b91c1c", margin: 0 }}>
                   Parameters out of range
                 </p>
-
               </div>
-
-              {/* REVIEW */}
 
               <div
                 style={{
@@ -591,7 +504,6 @@ export default function UploadPage({ onBack }) {
                   border: "1px solid #fde68a",
                 }}
               >
-
                 <p style={{ color: "#b45309", margin: 0 }}>
                   Review
                 </p>
@@ -609,7 +521,6 @@ export default function UploadPage({ onBack }) {
                 <p style={{ color: "#b45309", margin: 0 }}>
                   Requires verification
                 </p>
-
               </div>
 
             </div>
@@ -642,7 +553,9 @@ export default function UploadPage({ onBack }) {
                     File Name
                   </p>
 
-                  <strong>{result.fileName}</strong>
+                  <strong>
+                    {result.fileName || file?.name}
+                  </strong>
                 </div>
 
                 <div>
@@ -670,7 +583,9 @@ export default function UploadPage({ onBack }) {
                     Pages
                   </p>
 
-                  <strong>{result.pageCount || 0}</strong>
+                  <strong>
+                    {result.pageCount || 0}
+                  </strong>
                 </div>
 
                 <div>
@@ -679,7 +594,9 @@ export default function UploadPage({ onBack }) {
                   </p>
 
                   <strong>
-                    {(result.fileSize / 1024).toFixed(2)} KB
+                    {result.fileSize
+                      ? (result.fileSize / 1024).toFixed(2)
+                      : (file.size / 1024).toFixed(2)} KB
                   </strong>
                 </div>
 
@@ -711,13 +628,10 @@ export default function UploadPage({ onBack }) {
               <h2>🔬 Parameter Analysis</h2>
 
               {parameters.length === 0 ? (
-
                 <p>
                   No parameter analysis data was returned.
                 </p>
-
               ) : (
-
                 <div
                   style={{
                     overflowX: "auto",
@@ -734,9 +648,7 @@ export default function UploadPage({ onBack }) {
                   >
 
                     <thead>
-
                       <tr style={{ background: "#f8fafc" }}>
-
                         <th style={tableHeaderStyle}>
                           Parameter
                         </th>
@@ -752,17 +664,12 @@ export default function UploadPage({ onBack }) {
                         <th style={tableHeaderStyle}>
                           Status
                         </th>
-
                       </tr>
-
                     </thead>
 
                     <tbody>
-
                       {parameters.map((parameter, index) => (
-
                         <tr key={index}>
-
                           <td style={tableCellStyle}>
                             <strong>
                               {parameter.parameter}
@@ -778,15 +685,12 @@ export default function UploadPage({ onBack }) {
                           </td>
 
                           <td style={tableCellStyle}>
-
                             <span
                               style={{
                                 background:
                                   getStatusBackground(parameter.status),
-
                                 color:
                                   getStatusColor(parameter.status),
-
                                 padding: "6px 14px",
                                 borderRadius: "20px",
                                 fontWeight: "bold",
@@ -796,19 +700,14 @@ export default function UploadPage({ onBack }) {
                               {getStatusIcon(parameter.status)}{" "}
                               {parameter.status}
                             </span>
-
                           </td>
-
                         </tr>
-
                       ))}
-
                     </tbody>
 
                   </table>
 
                 </div>
-
               )}
 
             </div>
@@ -827,9 +726,7 @@ export default function UploadPage({ onBack }) {
               <h2>🤖 AI Analysis & Explanation</h2>
 
               <div style={{ marginTop: "20px" }}>
-
                 {parameters.map((parameter, index) => (
-
                   <div
                     key={index}
                     style={{
@@ -838,7 +735,6 @@ export default function UploadPage({ onBack }) {
                       borderRadius: "14px",
                       background:
                         getStatusBackground(parameter.status),
-
                       borderLeft:
                         `5px solid ${getStatusColor(parameter.status)}`,
                     }}
@@ -865,13 +761,11 @@ export default function UploadPage({ onBack }) {
 
                     <p>
                       <strong>Explanation:</strong>{" "}
-                      {parameter.explanation}
+                      {parameter.explanation || "No explanation available."}
                     </p>
 
                   </div>
-
                 ))}
-
               </div>
 
             </div>
@@ -888,7 +782,6 @@ export default function UploadPage({ onBack }) {
             >
 
               <details>
-
                 <summary
                   style={{
                     cursor: "pointer",
@@ -914,7 +807,7 @@ export default function UploadPage({ onBack }) {
                     overflowY: "auto",
                   }}
                 >
-                  {result.extractedText}
+                  {result.extractedText || "No extracted text available."}
                 </div>
 
               </details>
@@ -948,18 +841,14 @@ export default function UploadPage({ onBack }) {
             </div>
 
           </div>
-
         )}
 
       </div>
-
     </div>
   );
 }
 
-// ==========================================
 // TABLE STYLES
-// ==========================================
 
 const tableHeaderStyle = {
   textAlign: "left",
