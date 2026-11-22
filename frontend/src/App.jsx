@@ -1,5 +1,6 @@
-
 import React, { useState } from "react";
+
+import AuthPage from "./AuthPage";
 
 import Dashboard from "./Dashboard";
 import UploadPage from "./UploadPage";
@@ -17,6 +18,40 @@ import RiskPrediction from "./RiskPrediction";
 import "./App.css";
 
 export default function App() {
+
+  // ==========================================
+  // AUTHENTICATION
+  // ==========================================
+
+  const [authenticatedUser, setAuthenticatedUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem("certiVerifyAuthUser");
+
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleAuthenticated = (user) => {
+    localStorage.setItem(
+      "certiVerifyAuthUser",
+      JSON.stringify(user)
+    );
+
+    setAuthenticatedUser(user);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("certiVerifyAuthUser");
+
+    setAuthenticatedUser(null);
+  };
+
+  // ==========================================
+  // PAGE NAVIGATION
+  // ==========================================
+
   const [activePage, setActivePage] = useState("dashboard");
 
   // ==========================================
@@ -121,6 +156,7 @@ export default function App() {
   }) => {
     return (
       <div className="coming-soon-page">
+
         <button
           className="page-back-button"
           onClick={goToDashboard}
@@ -129,6 +165,7 @@ export default function App() {
         </button>
 
         <div className="coming-soon-content">
+
           <div className="coming-soon-icon">
             {icon}
           </div>
@@ -140,6 +177,7 @@ export default function App() {
           <button onClick={goToDashboard}>
             Back to Dashboard
           </button>
+
         </div>
       </div>
     );
@@ -257,12 +295,75 @@ export default function App() {
   };
 
   // ==========================================
-  // MAIN
+  // AUTHENTICATION CHECK
+  // ==========================================
+
+  if (!authenticatedUser) {
+    return (
+      <AuthPage
+        onAuthenticated={handleAuthenticated}
+      />
+    );
+  }
+
+  // ==========================================
+  // MAIN APPLICATION
   // ==========================================
 
   return (
     <div className="app">
+
+      {/* LOGOUT BUTTON */}
+
+      <div
+        style={{
+          position: "fixed",
+          top: "15px",
+          right: "20px",
+          zIndex: 99999,
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          background: "rgba(255,255,255,0.95)",
+          padding: "8px 12px",
+          borderRadius: "12px",
+          boxShadow: "0 4px 15px rgba(0,0,0,0.12)",
+          border: "1px solid #e5e7eb",
+        }}
+      >
+
+        <div
+          style={{
+            fontSize: "12px",
+            color: "#374151",
+            fontWeight: "600",
+          }}
+        >
+          {authenticatedUser.name || authenticatedUser.email}
+        </div>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            background: "#ef4444",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            padding: "8px 12px",
+            cursor: "pointer",
+            fontSize: "12px",
+            fontWeight: "600",
+          }}
+        >
+          Logout
+        </button>
+
+      </div>
+
+      {/* EXISTING APPLICATION */}
+
       {renderPage()}
+
     </div>
   );
 }
