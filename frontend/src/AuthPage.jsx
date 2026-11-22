@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import "./AuthPage.css";
 
@@ -5,16 +6,9 @@ import "./AuthPage.css";
 // API CONFIGURATION
 // ==========================================
 
-// Local development:
-// http://localhost:8080/api/auth
-
-// Netlify deployment:
-// Set VITE_API_URL in Netlify environment variables
-// Example: https://qualitylens-ai.onrender.com/api/auth
-
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "http://localhost:8080/api/auth";
+  "https://qualitylens-ai.onrender.com/api/auth";
 
 function AuthPage({ onAuthenticated }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -572,9 +566,7 @@ function AuthPage({ onAuthenticated }) {
               </div>
             )}
 
-            {/* ========================================== */}
             {/* ERROR MESSAGE */}
-            {/* ========================================== */}
 
             {error && (
               <div className="auth-message auth-error">
@@ -586,9 +578,7 @@ function AuthPage({ onAuthenticated }) {
               </div>
             )}
 
-            {/* ========================================== */}
             {/* SUCCESS MESSAGE */}
-            {/* ========================================== */}
 
             {success && (
               <div className="auth-message auth-success">
@@ -600,9 +590,7 @@ function AuthPage({ onAuthenticated }) {
               </div>
             )}
 
-            {/* ========================================== */}
             {/* SUBMIT BUTTON */}
-            {/* ========================================== */}
 
             <button
               type="submit"
@@ -632,9 +620,7 @@ function AuthPage({ onAuthenticated }) {
 
           </form>
 
-          {/* ========================================== */}
           {/* LOGIN / SIGNUP TOGGLE */}
-          {/* ========================================== */}
 
           <div className="auth-toggle">
 
@@ -655,9 +641,7 @@ function AuthPage({ onAuthenticated }) {
 
           </div>
 
-          {/* ========================================== */}
           {/* SECURITY */}
-          {/* ========================================== */}
 
           <div className="auth-security">
 
