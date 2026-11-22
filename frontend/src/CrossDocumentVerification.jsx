@@ -96,7 +96,7 @@ function CrossDocumentVerification({ onBack, onNavigate }) {
       formData.append("purchaseOrderFile", purchaseOrderFile);
 
       const response = await fetch(
-        "http://localhost:8080/api/coa/cross-verify",
+        "http://https://qualitylens-ai.onrender.com/api/coa/analyze/api/coa/cross-verify",
         {
           method: "POST",
           body: formData,

@@ -37,7 +37,7 @@ export default function VerificationCenter({ onBack }) {
       formData.append("file", file);
 
       const response = await fetch(
-        "http://localhost:8080/api/coa/analyze",
+        "http://https://qualitylens-ai.onrender.com/api/coa/analyze/api/coa/analyze",
         {
           method: "POST",
           body: formData,
